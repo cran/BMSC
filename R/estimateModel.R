@@ -235,7 +235,7 @@ estimateBayesianModel <- function(data,
                                      iter = 2000,
                                      cores = cores,
                                      verbose = FALSE,
-                                     refresh = -1,
+                                     refresh = 0,
                                      control = list(adapt_delta = 0.925,
                                                     max_treedepth = 14)))
   

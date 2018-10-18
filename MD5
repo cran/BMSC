@@ -1,9 +1,9 @@
-20778750fd154e85e0eade4e27655e6d *DESCRIPTION
+cf5897998d8bedfb7a35d2b3c04db7c8 *DESCRIPTION
 76e40d7e94ed6d04337b7aa40e8ed325 *NAMESPACE
 b1523897ed48f3638b52b772792d23d0 *R/NAMESPACE.R
 24d2b6f9a186c1dbf608b2375d322a66 *R/classes.R
 b867006a6a5670f144ae3d6680e1edef *R/createFormula.R
-d48d0f6df9ca6b2307727faa60d5166a *R/estimateModel.R
+571df6bf7bd8dae8741ab1fb8309c894 *R/estimateModel.R
 25d48e61b5acbb06c381df1f458401de *R/handleMissingValues.R
 65ba8d29386aa1bde1e7ab8b904d4f3a *R/method_predict.R
 a26aa5852e4eaa319ab51781b628bdf9 *R/method_show.R
@@ -24,7 +24,7 @@ e7ff6129b3c30c89f06321a4fc9818b3 *man/getBetaMatrix.Rd
 40b260f8262a1a7355d05a7fa060b704 *man/handleMissingData.Rd
 b078a6b766b5d84c13d39dd1a58fef5d *man/makeInteractions.Rd
 e15413ba41da54e77ba3c8c9074bbf2b *man/makePoly.Rd
-88abdfee42c275269e7785956d023aae *man/plotModelFit.Rd
+207d6866cc968ad83573e68d17e75952 *man/plotModelFit.Rd
 bb3a1450050af711c9d596e93aa46811 *man/plotModels.Rd
 ed639169497634129b9ee946cbce69dc *man/predict-ConstrainedLinReg-method.Rd
 2f0c683aabf6bb9e86d68916c4cbdb96 *man/prepColorVec.Rd
@@ -35,8 +35,8 @@ ed639169497634129b9ee946cbce69dc *man/predict-ConstrainedLinReg-method.Rd
 5099917608a4faea0b0ca74be0b0ab5e *man/show-ConstrainedLinReg-method.Rd
 6fad0a7cc9108d44908fe38036c3c12e *man/sortAndPaste.Rd
 badab5f8b0f7cc265dd333b03a6fa13b *man/tryAsFormula.Rd
-8d9ba42d41214e42d970bed0c93d8906 *src/Makevars
-c83243ddce0b96e0845fc22d1ca03cc4 *src/Makevars.win
+8b6af1946851150a3f06c4ea9ef1f674 *src/Makevars
+bc1248ab3875669f55ae76f80e0d839d *src/Makevars.win
 542b0f0be1e58800d95539c3c4aec92c *src/init.cpp
 56f3fcd6a053188548125580e1909250 *src/stan_files/chunks/license.stan
 86ef643e7c684619a0a5cd72b1e81a44 *src/stan_files/linReg.stan

@@ -4,7 +4,8 @@
 \alias{plotModelFit}
 \title{Plot errors of all models}
 \usage{
-plotModelFit(models, thresholdSE = 1, loos = NULL, markBestModel = TRUE)
+plotModelFit(models, thresholdSE = 1, loos = NULL,
+  markBestModel = TRUE)
 }
 \arguments{
 \item{models}{List with models of class \code{\link{ConstrainedLinReg}}}
