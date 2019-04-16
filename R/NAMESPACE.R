@@ -9,6 +9,6 @@
 #' labs scale_x_discrete theme
 #' @importFrom rstan extract stan_model sampling
 #' @importFrom R.utils insert
-#' @importFrom stats as.formula complete.cases model.matrix na.exclude napredict
-#' terms sd quantile
+#' @importFrom stats as.formula complete.cases model.matrix na.exclude napredict 
+#' terms sd quantile na.omit rnorm
 globalVariables(".")

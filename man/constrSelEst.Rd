@@ -6,8 +6,8 @@
 \usage{
 constrSelEst(formula, data, mustInclude = "", maxExponent = 1,
   interactionDepth = 1, intercept = TRUE, constraint_1 = FALSE,
-  yUncertainty = rep(0, nrow(data)), maxNumTerms = 10, scale = FALSE,
-  chains = 4, iterations = 2000)
+  yUncertainty = rep(0, nrow(data)), xUncertainty = NULL,
+  maxNumTerms = 10, scale = FALSE, chains = 4, iterations = 2000)
 }
 \arguments{
 \item{formula}{formula object: formula object without exponents or
@@ -31,6 +31,8 @@ Default is 1, e.g., only main effects (no interactions).}
 \item{yUncertainty}{numeric vector: optional, uncertainties in y variable
 given in standard deviations}
 
+\item{xUncertainty}{data.frame: optional, uncertainties in x variables. variable names must match with names in formula}
+
 \item{maxNumTerms}{positive integer: maximum number of variables to include}
 
 \item{scale}{logical: should the variables be scaled to mean 0 and sd 1?}
@@ -47,6 +49,7 @@ Model selection algorithm for constrained estimation
 }
 \examples{
 \dontrun{
+suppressWarnings(RNGversion("3.5.0"))
 set.seed(44)
 n <- 80
 x1 <- rnorm(n, sd = 1)
@@ -54,11 +57,16 @@ x2 <- rnorm(n, sd = 1)
 x3 <- rnorm(n, sd = 1)
 y <- 0.4 + 0.3 * x1 + 0.3 * x1 * x3 + 0.4 * x1 ^ 2 * x2 ^ 3 + rnorm(n, sd = 0.3)
 yUncertainty <- rexp(n, 10) * 0.01
+#optional (slow)
+#xUncertainty <- data.frame(x3 = rep(0.1, n), x1 = rep(0.1, n), x2 = rep(1, n))
 data <- data.frame(x1, x2, x3, y, yUncertainty)
 models <- constrSelEst(y ~ x1 + x2 + x3, mustInclude = "x1", maxExponent = 3,
                        interactionDepth = 3, intercept = TRUE,
                        constraint_1 = TRUE, data = data,
-                       yUncertainty = rep(0, nrow(data)), maxNumTerms = 10)
+                       yUncertainty = yUncertainty,
+                       xUncertainty = NULL,
+                       maxNumTerms = 10)
+plotModelFit(models)
 bestModel <- getBestModel(models, thresholdSE = 2)
 print(bestModel)
 }

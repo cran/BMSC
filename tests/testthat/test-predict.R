@@ -1,6 +1,7 @@
 context("Predict method")
 
 # Simulate data
+suppressWarnings(RNGversion("3.5.0"))
 set.seed(6245)
 n <- 50
 x1 <- rnorm(n)

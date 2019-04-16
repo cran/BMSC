@@ -12,6 +12,7 @@
 #' @param data data.frame: dataset
 #' @param yUncertainty numeric vector: optional, uncertainties in y variable
 #' given in standard deviations
+#' @param xUncertainty data.frame: optional, uncertainties in x variables. variable names must match with names in formula
 #' @param maxNumTerms positive integer: maximum number of variables to include
 #' @param scale logical: should the variables be scaled to mean 0 and sd 1?
 #' @param chains positive integer: number of chains for MCMC sampling
@@ -19,6 +20,7 @@
 #' @return A list of potential models
 #' @examples
 #' \dontrun{
+#' suppressWarnings(RNGversion("3.5.0"))
 #' set.seed(44)
 #' n <- 80
 #' x1 <- rnorm(n, sd = 1)
@@ -26,11 +28,16 @@
 #' x3 <- rnorm(n, sd = 1)
 #' y <- 0.4 + 0.3 * x1 + 0.3 * x1 * x3 + 0.4 * x1 ^ 2 * x2 ^ 3 + rnorm(n, sd = 0.3)
 #' yUncertainty <- rexp(n, 10) * 0.01
+#' #optional (slow)
+#' #xUncertainty <- data.frame(x3 = rep(0.1, n), x1 = rep(0.1, n), x2 = rep(1, n))
 #' data <- data.frame(x1, x2, x3, y, yUncertainty)
 #' models <- constrSelEst(y ~ x1 + x2 + x3, mustInclude = "x1", maxExponent = 3,
 #'                        interactionDepth = 3, intercept = TRUE,
 #'                        constraint_1 = TRUE, data = data,
-#'                        yUncertainty = rep(0, nrow(data)), maxNumTerms = 10)
+#'                        yUncertainty = yUncertainty,
+#'                        xUncertainty = NULL,
+#'                        maxNumTerms = 10)
+#' plotModelFit(models)
 #' bestModel <- getBestModel(models, thresholdSE = 2)
 #' print(bestModel)
 #' }
@@ -43,6 +50,7 @@ constrSelEst <- function(formula,
                          intercept = TRUE,
                          constraint_1 = FALSE,
                          yUncertainty = rep(0, nrow(data)),
+                         xUncertainty = NULL,
                          maxNumTerms = 10,
                          scale = FALSE,
                          chains = 4,
@@ -63,13 +71,14 @@ constrSelEst <- function(formula,
                               scale = scale,
                               chains = chains,
                               iterations = iterations)
-  
+
   models <- reAssessModels(formula = formula,
                            data = data,
                            variableData = variableData,
                            intercept = intercept,
                            constraint_1 = constraint_1,
                            yUncertainty = yUncertainty,
+                           xUncertainty = xUncertainty,
                            mustInclude = mustInclude,
                            maxNumTerms = maxNumTerms,
                            scale = scale,
@@ -92,7 +101,8 @@ selectModel <- function(formula,
                         iterations) {
   
   if (any(yUncertainty < 0))
-    stop("maxExponent and interactionDepth must be positive or equal 0")
+    stop("uncertainties in y must be larger or equal 0")
+  data$yUncertainty <- yUncertainty
   
   regFormula <- createFormula(formula, maxExponent, interactionDepth, intercept)
   mustIncludeFormula <- paste(paste(all.vars(regFormula)[1], "~",
@@ -139,17 +149,22 @@ reAssessModels <- function(formula,
                            intercept,
                            constraint_1,
                            yUncertainty,
+                           xUncertainty,
                            mustInclude,
                            maxNumTerms,
                            Threshold = 0.01,
                            scale,
                            chains,
                            iterations) {
-  modelCompiled <- if (constraint_1) stanmodels$linReg else stanmodels$linRegUnConstr
+  data$yUncertainty <- yUncertainty
+  
+  if (constraint_1 & is.null(xUncertainty)) modelCompiled <- stanmodels$linReg 
+  if (constraint_1 & !is.null(xUncertainty)) modelCompiled <- stanmodels$linRegXU
+  if (!constraint_1 & is.null(xUncertainty)) modelCompiled <- stanmodels$linRegUnConstr
+  if (!constraint_1 & !is.null(xUncertainty)) modelCompiled <- stanmodels$linRegUnConstrXU
   
   mustIncludeFormula <- paste(paste(all.vars(formula)[1], "~",
                                     paste(mustInclude, collapse = "+")), "- 1")
-  
   Nterms <- max(max(1, length(mustInclude)),
                 min(maxNumTerms,
                     length(variableData[variableData$K > Threshold,
@@ -176,13 +191,13 @@ reAssessModels <- function(formula,
     estimateBayesianModel(data = data,
                           regFormula = formula,
                           intercept = intercept,
+                          xUncertainty = xUncertainty,
                           modelCompiled = modelCompiled,
                           mustIncludeFormula = mustIncludeFormula,
                           selectVars = FALSE,
                           scale = scale,
                           chains = chains,
                           iterations = iterations)
-    
   })
   names(modelList) <- regFormulas
   modelList
@@ -193,6 +208,7 @@ estimateBayesianModel <- function(data,
                                   regFormula,
                                   mustIncludeFormula,
                                   intercept,
+                                  xUncertainty = NULL,
                                   modelCompiled,
                                   selectVars,
                                   mc = TRUE,
@@ -200,6 +216,7 @@ estimateBayesianModel <- function(data,
                                   chains,
                                   iterations) {
   N <- nrow(data)
+
   X <- model.matrix(as.formula(regFormula), data = data)
   
   X2 <- model.matrix(as.formula(mustIncludeFormula), data = data)
@@ -212,37 +229,65 @@ estimateBayesianModel <- function(data,
     X <- cbind(X, X2)
   }
   
+  xUnc <- 0
+  xUncertaintyMatrix <- matrix(0, nrow = nrow(X), ncol = ncol(X))
+  if(!is.null(xUncertainty)){
+    xUncertaintyMatrix <- getUncertaintyModelMatrix(data, xUncertainty, regFormula, X)
+    xUnc <- 1
+  }
   K <- ncol(X)
   y <- data[, all.vars(as.formula(regFormula))[1]]
   yUncertainty <- data$yUncertainty
   K1 <- if (intercept) 1 else 0
   K2 <- ncol(X2)
   
+  scaleCenter <- rep(0, K)
+  scaleScale <- rep(1, K)
+  
   if (selectVars | scale == TRUE) {
     if (intercept) {
-      X[, -1] <- scale(X[, -1])
+      scaledX <- scale(X[, -1])
+      X[, -1] <- scaledX
+      X2[, -1] <- scale(X2[, -1])
+      if(!is.null(xUncertainty)){
+        xUncertaintyMatrix[, -1] <- sweep(xUncertaintyMatrix[, -1], 2, attr(scaledX, "scaled:scale"), '/')
+      }
+      scaleCenter <- attr(scaledX, "scaled:center")
+      scaleScale <- attr(scaledX, "scaled:scale")
     } else {
-      X <- scale(X)
+      scaledX <- scale(X)
+      X <- scaledX
+      X2 <- scale(X2)
+      if(!is.null(xUncertainty)){
+        xUncertaintyMatrix <- sweep(xUncertaintyMatrix, 2, attr(scaledX, "scaled:scale"), '/')
+      }
+      scaleCenter <- attr(scaledX, "scaled:center")
+      scaleScale <- attr(scaledX, "scaled:scale")
     }
     X[is.na(X)] <- 0
+    if(!is.null(xUncertainty)){
+      xUncertaintyMatrix[is.na(xUncertaintyMatrix)] <- 0
+    }
   }
   
   cores <- getOption("mc.cores", if (mc) chains else 1)
-  if (!selectVars) cores <- 1
+  #if (!selectVars) cores <- 1
   # Compute stan model
   model <- suppressWarnings(sampling(modelCompiled,
                                      chains = chains,
                                      iter = 2000,
-                                     cores = cores,
                                      verbose = FALSE,
                                      refresh = 0,
+                                     cores = cores,
                                      control = list(adapt_delta = 0.925,
                                                     max_treedepth = 14)))
   
   new("ConstrainedLinReg",
       model,
       formula = as.formula(regFormula),
-      hasIntercept = intercept)
+      hasIntercept = intercept,
+      scaleCenter = scaleCenter,
+      scaleScale = scaleScale)
 }
 
 
@@ -289,3 +334,25 @@ bestModel <- function(models, loos, thresholdSE){
   
   which.max(comparison$elpd_diff + comparison$se * thresholdSE)
 }
+
+getUncertaintyModelMatrix <-
+  function(data, xUncertainty, regFormula, X) {
+    dataUnc <- data
+    indices <- na.omit(match(names(xUncertainty), names(data)))
+    if (length(indices) > 0) {
+      modelMatrices <- lapply(1:1000, function(x) {
+        dataUnc[, match(names(xUncertainty), names(data))] <-
+          data[, match(names(xUncertainty), names(data))] +
+          do.call("cbind", lapply(1:ncol(xUncertainty), function(x)
+            rnorm(nrow(data), mean = 0, sd = xUncertainty[, x])))
+        mUncertainty <-
+          model.matrix(as.formula(regFormula), data = dataUnc)
+      })
+      xUncertaintyModelMatrix <-
+        apply(simplify2array(modelMatrices), 1:2, sd)
+    } else {
+      xUncertaintyModelMatrix <-
+        matrix(0, nrow = nrow(data), ncol = ncol(X))
+    }
+    return(xUncertaintyModelMatrix)
+  }

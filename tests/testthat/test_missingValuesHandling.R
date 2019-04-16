@@ -1,6 +1,7 @@
 context("Handling missing values")
 
 # Create example data
+suppressWarnings(RNGversion("3.5.0"))
 set.seed(10143)
 n <- 75
 x1 <- rnorm(n, sd = 2)

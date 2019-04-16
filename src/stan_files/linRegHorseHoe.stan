@@ -23,11 +23,13 @@ transformed parameters {
   real <lower = 0> tau ; // global shrinkage parameter
   vector <lower = 0>[K-K1] lambda ; // local shrinkage parameters
   vector<lower = 0>[K-K1] beta; //the regression parameters
+  vector[K+K2] betaAll;
   vector[N] sigma;
   sigma = sqrt(square(exp(logsigma)) + square(yUncertainty)) ;
   lambda = r1_local .* sqrt ( r2_local );
-  tau = r1_global * sqrt ( r2_global );
+  tau = r1_global * sqrt ( r2_global ) * sqrt(square(exp(logsigma)) + mean(square(yUncertainty)));
   beta = zvalues .* lambda * tau ;
+  betaAll = append_row(append_row(beta0, beta), beta2);
 }
 model {
 logsigma ~ student_t(3, 0, 1);
@@ -36,7 +38,7 @@ zvalues ~ normal(0 , 1);
 r1_local ~ normal(0.0 , 1.0);
 r2_local ~ inv_gamma(0.5, 0.5);
 // half - t prior for tau
-r1_global ~ normal(0.0 , sigma);
+r1_global ~ normal(0.0 , 1);
 r2_global ~ inv_gamma(0.5, 0.5);
 if(K1 > 0){
 beta0 ~ student_t(1, 0, 5);
@@ -44,9 +46,9 @@ beta0 ~ student_t(1, 0, 5);
 if(K2 > 0){
 beta2 ~ student_t(3, 0, 0.5); //prior for the slopes
 }
-y ~ normal(append_col(X, X2) *  append_row(append_row(beta0, beta), beta2), sigma);
+y ~ normal(append_col(X, X2) * betaAll, sigma);
 }
 generated quantities{
 vector[N] log_lik;
-for (n in 1:N) log_lik[n] = normal_lpdf(y[n] | append_col(X[n, ], X2[n, ]) * append_row(append_row(beta0, beta), beta2), sigma[n]);
+for (n in 1:N) log_lik[n] = normal_lpdf(y[n] | append_col(X[n, ], X2[n, ]) * betaAll, sigma[n]);
 }

@@ -14,5 +14,9 @@ Inherits from \code{\link[rstan]{stanfit}}
 \item{\code{formula}}{model formula (class formula)}
 
 \item{\code{hasIntercept}}{logical: Does the model formula include an intercept?}
+
+\item{\code{scaleCenter}}{numeric: location scale of betas}
+
+\item{\code{scaleScale}}{numeric: scale scale of betas}
 }}
 
