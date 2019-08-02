@@ -1,6 +1,6 @@
 Package: BMSC
 Title: Bayesian Model Selection under Constraints
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: c(
     person("Marcus", "Groß", email = "marcus.gross@inwt-statistics.de", role = c("aut", "cre")),
     person("Ricardo", "Fernandes", email = "ldv1452@gmail.com", role = c("aut")),
@@ -16,15 +16,15 @@ Imports: dplyr (>= 0.7.4), ggplot2 (>= 2.2.1), loo (>= 2.0.0), rstan
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-LinkingTo: StanHeaders (>= 2.18.0), rstan (>= 2.18.2), BH (>= 1.66.0),
+LinkingTo: StanHeaders (>= 2.18.1), rstan (>= 2.19.2), BH (>= 1.69.0),
         Rcpp (>= 0.12.0), RcppEigen (>= 0.3.3.3.0)
 Suggests: lintr, testthat
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.1
 NeedsCompilation: yes
-Packaged: 2019-04-16 14:30:29 UTC; mgross
+Packaged: 2019-07-24 09:41:12 UTC; mgross
 Author: Marcus Groß [aut, cre],
   Ricardo Fernandes [aut],
   Mira Celine Klein [ctb]
 Maintainer: Marcus Groß <marcus.gross@inwt-statistics.de>
 Repository: CRAN
-Date/Publication: 2019-04-16 15:25:42 UTC
+Date/Publication: 2019-08-02 15:00:05 UTC
